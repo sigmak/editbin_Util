@@ -24,6 +24,7 @@ namespace editbin_Util
 
         private void button1_Click(object sender, EventArgs e)
         {
+            /*
             CommonOpenFileDialog dialog = new CommonOpenFileDialog(); // 새로운 폴더 선택 Dialog 를 생성합니다.
             dialog.IsFolderPicker = true; //
             //dialog.Filters. = "엑셀 파일 (*.xls)|*.xls|엑셀 파일 (*.xlsx)|*.xlsx";
@@ -33,6 +34,10 @@ namespace editbin_Util
                 DataTable dt_filelistinfo = GetFileListFromFolderPath(dialog.FileName);
                 ShowDataFromDataTableToDataGridView(dt_filelistinfo, dataGridView1);
             }
+            */
+            label2.Text = Application.StartupPath + @"\tmp1"; // 프로그램 실행폴더의 하위 폴더인 tmp1 폴더 지정
+            DataTable dt_filelistinfo = GetFileListFromFolderPath(label2.Text);
+            ShowDataFromDataTableToDataGridView(dt_filelistinfo, dataGridView1);
 
         }
 
@@ -46,18 +51,20 @@ namespace editbin_Util
             DirectoryInfo di = new DirectoryInfo(FolderName);  // 해당 폴더 정보를 가져옵니다.
 
             DataTable dt1 = new DataTable(); // 새로운 테이블을 작성합니다. (FileINfo 에서 가져오기 원하는 속성을 열로 추가합니다.)
+            dt1.Columns.Add("No", typeof(int)); // No 행숫자표시
             dt1.Columns.Add("Folder", typeof(string)); //파일의 폴더
             dt1.Columns.Add("FileName", typeof(string)); //파일 이름(확장자 포함)
             dt1.Columns.Add("Extension", typeof(string)); //확장자
             dt1.Columns.Add("CreationTime", typeof(DateTime)); //생성 일자
             dt1.Columns.Add("LastWriteTime", typeof(DateTime)); //마지막 수정 일자
             dt1.Columns.Add("LastAccessTime", typeof(DateTime)); //마지막 접근 일자
-
+            int no = 0;
             foreach(FileInfo File in di.GetFiles()) //선택 폴더의 파일 목록을 스캔합니다.
             {
                 if (File.Extension.ToUpper().Equals(".EXE")) //확장자가 대문자 치환해서 .EXE 인 경우 
                 {
-                    dt1.Rows.Add(File.DirectoryName, File.Name, File.Extension, File.CreationTime, File.LastWriteTime, File.LastAccessTime); // 개별 파일 별로 정보를 추가합니다.
+                    no++;
+                    dt1.Rows.Add(no, File.DirectoryName, File.Name, File.Extension, File.CreationTime, File.LastWriteTime, File.LastAccessTime); // 개별 파일 별로 정보를 추가합니다.
                 }
 
             }
@@ -105,6 +112,39 @@ namespace editbin_Util
             foreach(DataGridViewColumn drvc1 in dgv1.Columns) // 결괄르 출력할 DataGridView의 모든 열을 스캔합니다.
             {
                 drvc1.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells; // 선택 열의 너비를 자동으로 설정합니다.
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            dataGridView1.ReadOnly = true;// 수정못하게 읽기전용으로
+            dataGridView1.MultiSelect = false; //여러개의 셀이나 행을 선택하지 못하도록 막고 싶을 때
+            dataGridView1.AllowUserToAddRows = false;  // 빈레코드 표시 안하기
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            //label2.Text = Application.StartupPath + @"\exefix"; // 프로그램 실행폴더의 하위 폴더인 tmp1 폴더 지정
+            string exefixFolder = Application.StartupPath + @"\exefix";
+
+            // 출처: https://link2me.tistory.com/786
+            // 셀 내용 읽기 1행, 0열  --> 행은 Rows, 열은 Column 이 아니라 Cells 로 표기하네
+            // dataGridView1.Rows[1].Cells[0].Value.ToString();
+
+            // 출처: https://stackoverflow.com/questions/19737436/looping-each-row-in-datagridview
+            // foreach (DataGridViewRow row in datagridviews.Rows)
+            // {
+            //    currQty += row.Cells["qty"].Value;
+            //    //More code here
+            // }
+            textBox2.Text = "";
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                //dt1.Columns.Add("Folder", typeof(string)); //파일의 폴더
+                //dt1.Columns.Add("FileName", typeof(string)); //파일 이름(확장자 포함)
+
+                textBox2.Text += row.Cells["No"].Value + ": " + exefixFolder + @"\editbin.exe " + row.Cells["Folder"].Value + @"\" + row.Cells["FileName"].Value + "  /SUBSYSTEM:WINDOWS,5.01" + "\n";
             }
         }
     }
