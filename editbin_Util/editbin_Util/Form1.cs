@@ -10,6 +10,7 @@ using System.Windows.Forms;
 
 using System.IO;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Diagnostics;
 
 
 //출처: https://ilbbang.tistory.com/entry/폴더-내-파일-목록-가져오기하위폴더-포함여부
@@ -59,12 +60,13 @@ namespace editbin_Util
             dt1.Columns.Add("LastWriteTime", typeof(DateTime)); //마지막 수정 일자
             dt1.Columns.Add("LastAccessTime", typeof(DateTime)); //마지막 접근 일자
             int no = 0;
-            foreach(FileInfo File in di.GetFiles()) //선택 폴더의 파일 목록을 스캔합니다.
+            foreach(FileInfo fFile in di.GetFiles()) //선택 폴더의 파일 목록을 스캔합니다.
             {
-                if (File.Extension.ToUpper().Equals(".EXE")) //확장자가 대문자 치환해서 .EXE 인 경우 
+                if (fFile.Extension.ToUpper().Equals(".EXE")) //확장자가 대문자 치환해서 .EXE 인 경우 
                 {
                     no++;
-                    dt1.Rows.Add(no, File.DirectoryName, File.Name, File.Extension, File.CreationTime, File.LastWriteTime, File.LastAccessTime); // 개별 파일 별로 정보를 추가합니다.
+                    dt1.Rows.Add(no, fFile.DirectoryName, fFile.Name, fFile.Extension, fFile.CreationTime, fFile.LastWriteTime, fFile.LastAccessTime); // 개별 파일 별로 정보를 추가합니다.
+                    
                 }
 
             }
@@ -121,6 +123,15 @@ namespace editbin_Util
             dataGridView1.MultiSelect = false; //여러개의 셀이나 행을 선택하지 못하도록 막고 싶을 때
             dataGridView1.AllowUserToAddRows = false;  // 빈레코드 표시 안하기
 
+            dataGridView2.ReadOnly = true;// 수정못하게 읽기전용으로
+            dataGridView2.MultiSelect = false; //여러개의 셀이나 행을 선택하지 못하도록 막고 싶을 때
+            dataGridView2.AllowUserToAddRows = false;  // 빈레코드 표시 안하기
+
+            dataGridView3.ReadOnly = true;// 수정못하게 읽기전용으로
+            dataGridView3.MultiSelect = false; //여러개의 셀이나 행을 선택하지 못하도록 막고 싶을 때
+            dataGridView3.AllowUserToAddRows = false;  // 빈레코드 표시 안하기
+
+
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -139,13 +150,99 @@ namespace editbin_Util
             //    //More code here
             // }
             textBox2.Text = "";
+
+            /*
+                        // Start the child process.
+                        Process p = new Process();
+                        // Redirect the output stream of the child process.
+                        p.StartInfo.UseShellExecute = false;
+                        p.StartInfo.RedirectStandardOutput = true;
+                        p.StartInfo.FileName = "YOURBATCHFILE.bat";
+                        p.Start();
+                        // Do not wait for the child process to exit before
+                        // reading to the end of its redirected stream.
+                        // p.WaitForExit();
+                        // Read the output stream first and then wait.
+                        string output = p.StandardOutput.ReadToEnd();
+                        p.WaitForExit();
+            */
+            
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
                 //dt1.Columns.Add("Folder", typeof(string)); //파일의 폴더
-                //dt1.Columns.Add("FileName", typeof(string)); //파일 이름(확장자 포함)
+                //dt1.Columns.Add("FileName", typeof(string)); //파일 이름(확장자 포함) 
 
-                textBox2.Text += row.Cells["No"].Value + ": " + exefixFolder + @"\editbin.exe " + row.Cells["Folder"].Value + @"\" + row.Cells["FileName"].Value + "  /SUBSYSTEM:WINDOWS,5.01" + "\n";
+                //참고 : https://frontjang.info/entry/C%EC%97%90%EC%84%9C-%EC%99%B8%EB%B6%80%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%A8-%EC%8B%A4%ED%96%89%ED%95%98%EA%B3%A0-%EA%B2%B0%EA%B3%BC-%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0
+                ProcessStartInfo start = new ProcessStartInfo();
+
+                //start.WorkingDirectory = Application.StartupPath + @"\exefix"; // 프로그램 실행폴더의 하위 폴더인 exefix 폴더 지정
+                start.FileName = Application.StartupPath + @"\exefix"+@"\editbin.exe";// @"ping.exe";
+                start.UseShellExecute = false;
+                start.RedirectStandardOutput = true;
+                start.WindowStyle = ProcessWindowStyle.Hidden;
+                start.CreateNoWindow = true;
+                start.Arguments = row.Cells["Folder"].Value + @"\" + row.Cells["FileName"].Value + " /SUBSYSTEM:WINDOWS,5.01";
+                textBox2.Text += "[" + row.Cells["No"].Value +  "]Start-----------------------------------------------------" + "\r\n";
+                textBox2.Text +=  ":" + start.FileName + " " + start.Arguments + "\r\n";
+                using (Process process = Process.Start(start))
+                {
+                    using (StreamReader reader = process.StandardOutput)
+                    {
+                        textBox2.Text += reader.ReadToEnd();
+                    }
+                    process.WaitForExit();
+                }
+                textBox2.Text += "[" + row.Cells["No"].Value + "]End-----------------------------------------------------" + "\r\n";
+
+                ////textBox2.Text += row.Cells["No"].Value + ": " + exefixFolder + @"\editbin.exe " + row.Cells["Folder"].Value + @"\" + row.Cells["FileName"].Value + "  /SUBSYSTEM:WINDOWS,5.01" + "\n";
             }
+            //label2.Text = Application.StartupPath + @"\tmp1"; // 프로그램 실행폴더의 하위 폴더인 tmp1 폴더 지정
+            DataTable dt_filelistinfo = GetFileListFromFolderPath(label2.Text);
+            ShowDataFromDataTableToDataGridView(dt_filelistinfo, dataGridView2);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            string fileFullPath = "";
+            //3 날짜 시간 변경된게 있으면 복원하기
+            //참고 : http://egloos.zum.com/nstyle/v/1638307
+            for (int iRow=0; iRow<dataGridView1.RowCount; iRow++)
+            {
+                //dt1.Columns.Add("CreationTime", typeof(DateTime)); //생성 일자
+                //dt1.Columns.Add("LastWriteTime", typeof(DateTime)); //마지막 수정 일자
+                //dt1.Columns.Add("LastAccessTime", typeof(DateTime)); //마지막 접근 일자
+                //row.Cells["Folder"].Value + @"\" + row.Cells["FileName"].Value
+                fileFullPath = dataGridView1.Rows[iRow].Cells["Folder"].Value + @"\" + dataGridView1.Rows[iRow].Cells["FileName"].Value;
+
+                if (dataGridView1.Rows[iRow].Cells["CreationTime"].Value!= dataGridView2.Rows[iRow].Cells["CreationTime"].Value)
+                {
+                    //Use of DateTime.Parse()   
+                    DateTime dtModified = DateTime.Parse(dataGridView1.Rows[iRow].Cells["CreationTime"].Value.ToString());
+                    //Change the file created time.
+                    File.SetCreationTime(fileFullPath, dtModified);
+                }
+
+                if (dataGridView1.Rows[iRow].Cells["LastWriteTime"].Value != dataGridView2.Rows[iRow].Cells["LastWriteTime"].Value)
+                {
+                    //Use of DateTime.Parse()   
+                    DateTime dtModified = DateTime.Parse(dataGridView1.Rows[iRow].Cells["LastWriteTime"].Value.ToString());
+                    //Change the file modified time.
+                    File.SetLastWriteTime(fileFullPath, dtModified);
+                }
+
+                if (dataGridView1.Rows[iRow].Cells["LastAccessTime"].Value != dataGridView2.Rows[iRow].Cells["LastAccessTime"].Value)
+                {
+                    //Use of DateTime.Parse()   
+                    DateTime dtModified = DateTime.Parse(dataGridView1.Rows[iRow].Cells["LastAccessTime"].Value.ToString());
+                    //Change the file LastAccessTime.
+                    File.SetLastAccessTime(fileFullPath, dtModified);
+                }
+
+            }
+
+            //label2.Text = Application.StartupPath + @"\tmp1"; // 프로그램 실행폴더의 하위 폴더인 tmp1 폴더 지정
+            DataTable dt_filelistinfo = GetFileListFromFolderPath(label2.Text);
+            ShowDataFromDataTableToDataGridView(dt_filelistinfo, dataGridView3);
         }
     }
 }

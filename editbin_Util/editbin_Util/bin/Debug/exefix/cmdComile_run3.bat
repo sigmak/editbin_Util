@@ -1,0 +1,1 @@
+editbin %1 /SUBSYSTEM:WINDOWS,5.01
