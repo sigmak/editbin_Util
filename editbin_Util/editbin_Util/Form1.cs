@@ -21,6 +21,8 @@ namespace editbin_Util
         public Form1()
         {
             InitializeComponent();
+            textBox2.ReadOnly = true;//읽기 전용
+
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -137,6 +139,10 @@ namespace editbin_Util
         private void button2_Click(object sender, EventArgs e)
         {
             //label2.Text = Application.StartupPath + @"\exefix"; // 프로그램 실행폴더의 하위 폴더인 tmp1 폴더 지정
+            if (label2.Text.Equals("없음"))
+            {
+                return;// 은 함수 자체를 탈출
+            }
             string exefixFolder = Application.StartupPath + @"\exefix";
 
             // 출처: https://link2me.tistory.com/786
@@ -203,6 +209,11 @@ namespace editbin_Util
 
         private void button3_Click(object sender, EventArgs e)
         {
+            if (label2.Text.Equals("없음"))
+            {
+                return;// 은 함수 자체를 탈출
+            }
+
             string fileFullPath = "";
             //3 날짜 시간 변경된게 있으면 복원하기
             //참고 : http://egloos.zum.com/nstyle/v/1638307
@@ -243,6 +254,35 @@ namespace editbin_Util
             //label2.Text = Application.StartupPath + @"\tmp1"; // 프로그램 실행폴더의 하위 폴더인 tmp1 폴더 지정
             DataTable dt_filelistinfo = GetFileListFromFolderPath(label2.Text);
             ShowDataFromDataTableToDataGridView(dt_filelistinfo, dataGridView3);
+        }
+
+        private void btnInit_Click(object sender, EventArgs e)
+        {
+            if(textBox2.Text!="" && dataGridView3.Rows.Count==0 )
+            {
+                //3단계만 진행안된 상태에서는 초기화가 안됩니다.
+                MessageBox.Show("3단계만 진행안된 상태에서는 초기화가 안됩니다.!", "경고!!!");
+                return; // 은 함수 자체를 탈출
+            }
+            
+            
+            //초기화 버튼
+            label2.Text = "없음";
+
+            dataGridView1.Columns.Clear();
+            dataGridView1.Rows.Clear();
+            dataGridView1.Refresh();
+
+            textBox2.Text = "";
+
+            dataGridView2.Columns.Clear();
+            dataGridView2.Rows.Clear();
+            dataGridView2.Refresh();
+
+            dataGridView3.Columns.Clear();
+            dataGridView3.Rows.Clear();
+            dataGridView3.Refresh();
+
         }
     }
 }
